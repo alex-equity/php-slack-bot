@@ -137,8 +137,20 @@ $bot->enableWebserver(8080, 'secret'); // This will listen on port 8080
 $bot->run();
 ```
 
-Then, use the parameter "name" to trigger the corresponding webhook :
+Altered in this fork:
 
+Use the parameter "webhook" to trigger the corresponding webhook.  In the example case above, the "webhook" value is "output".
+
+The input format can be either JSON or a POST with a json encoded payload, as described here in https://api.slack.com/incoming-webhooks.  The webserver differentiates between the two using the Content-Type header.
+
+JSON:
 ```
-curl -X POST --data-urlencode 'auth=secret' --data-urlencode 'name=output' --data-urlencode 'payload={"type" : "message", "text": "This is a message", "channel": "#general"}' http://localhost:8080
+curl -X POST -H 'Content-Type: application/json; charset=utf8' --data '{"webhook":
+ "output", "type" : "message", "text": "This is a message", "channel": "U35RT977W"}' http://localhost:8080
 ```
+POST Fields (json encoded payload)
+```
+curl -X POST --data-urlencode 'webhook=output' --data-urlencode 'payload={"type" : "message", "text": "This is a message", "channel": "#general"}' http://localhost:8080
+```
+
+Also, the response from a webhook is now json encoded.  The return value from your custom webhook's execute() method will be inside the "data" property of a successful request.  Otherwise, an "error" property will be populated.

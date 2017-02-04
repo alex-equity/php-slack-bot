@@ -100,31 +100,66 @@ class Bot {
         /* Webserver */
         if (null !== $this->webserverPort) {
             $logger->notice("Listening on port ".$this->webserverPort);
+            $resp_headers = array('Content-Type' => 'application/json; charset=utf8');
             $socket = new \React\Socket\Server($loop);
-            $http = new \React\Http\Server($socket);
-            $http->on('request', function ($request, $response) use ($client) {
-                $request->on('data', function($data) use ($client, $request, $response) {
-                    parse_str($data, $post);
-                    if ($this->authentificationToken === null || ($this->authentificationToken !== null &&
-                                                                  isset($post['auth']) &&
-                                                                  $post['auth'] === $this->authentificationToken)) {
-                        if (isset($post['name']) && is_string($post['name']) && isset($this->webhooks[$post['name']])) {
-                            $hook = $this->webhooks[$post['name']];
-                            $hook->setClient($client);
-                            $hook->setContext($this->context);
-                            $hook->executeWebhook(json_decode($post['payload'], true), $this->context);
-                            $response->writeHead(200, array('Content-Type' => 'text/plain'));
-                            $response->end("Ok\n");
-                        }
-                        else {
-                            $response->writeHead(404, array('Content-Type' => 'text/plain'));
-                            $response->end("No webhook found\n");
+            $http   = new \React\Http\Server($socket);
+            $http->on('request', function ($request, $response) use ($client, $resp_headers) {
+                $request->on('data', function ($data) use ($client, $request, $response, $resp_headers) {
+                    $req_headers = $request->getHeaders();
+                    if (! isset($req_headers['Content-Type'])) {
+                        $reply = ['error' => 'Invalid request; missing Content-Type'];
+                        $response->writeHead(400, $resp_headers);
+                        $response->end(json_encode($reply));
+                        return;
+                    }
+                    if (strpos($req_headers['Content-Type'], 'json')) {
+                        $data = json_decode($data, true);
+                        if (json_last_error() !== JSON_ERROR_NONE) {
+                            $reply = ['error' => 'Invalid request; ' . json_last_error_msg()];
+                            $response->writeHead(400, $resp_headers);
+                            $response->end(json_encode($reply));
+                            return;
                         }
                     }
                     else {
-                        $response->writeHead(403, array('Content-Type' => 'text/plain'));
-                        $response->end("");
+                        parse_str($data, $post);
+                        if (! isset($post['payload'])) {
+                            $reply = ['error' => 'Invalid request; missing payload'];
+                            $response->writeHead(400, $resp_headers);
+                            $response->end(json_encode($reply));
+                            return;
+                        }
+                        $payload = json_decode($post['payload'], true);
+                        if (json_last_error() !== JSON_ERROR_NONE) {
+                            $reply = ['error' => 'Invalid request; ' . json_last_error_msg()];
+                            $response->writeHead(400, $resp_headers);
+                            $response->end(json_encode($reply));
+                            return;
+                        }
+                        $data = array_merge($post, $payload);
                     }
+
+                    if ($this->authentificationToken !== null &&
+                        (! isset($data['webserver_auth']) || $data['webserver_auth'] !== $this->authentificationToken)) {
+                        $err = 'Invalid auth token';
+                        $reply = array('error' => $err);
+                        $http_code = 403;
+                    }
+                    elseif (! isset($data['webhook']) ||
+                        (is_string($data['webhook']) && !isset($this->webhooks[$data['webhook']]))) {
+                        $err = 'No webhook found named, "' . $data['webhook'] . '"';
+                        $reply = ['error' => $err];
+                        $http_code = 404;
+                    }
+                    else {
+                        $hook = $this->webhooks[$data['webhook']];
+                        $hook->setClient($client);
+                        $hook->setContext($this->context);
+                        $reply = ['data' => $hook->executeWebhook($data, $this->context)];
+                        $http_code = 200;
+                    }
+                    $response->writeHead($http_code, $resp_headers);
+                    $response->end(json_encode($reply));
                 });
             });
             $socket->listen($this->webserverPort);

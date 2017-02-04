@@ -1,7 +1,7 @@
 {
-    "name": "jclg/php-slack-bot",
+    "name": "alex-equity/php-slack-bot",
     "description": "Slack bot user written in PHP",
-    "homepage": "https://github.com/jclg/php-slack-bot",
+    "homepage": "https://github.com/alex-equity/php-slack-bot",
     "license": "MIT",
     "require": {
         "devristo/phpws": "dev-master",
