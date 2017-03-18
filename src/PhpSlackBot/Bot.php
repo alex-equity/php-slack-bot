@@ -60,6 +60,19 @@ class Bot {
         $loop = \React\EventLoop\Factory::create();
         $client = new \Devristo\Phpws\Client\WebSocket($this->wsUrl, $loop, $logger);
 
+        foreach ($this->commands as $command) {
+            $command->setClient($client);
+            $command->setContext($this->context);
+        }
+        foreach ($this->catchAllCommands as $command) {
+            $command->setClient($client);
+            $command->setContext($this->context);
+        }
+        foreach ($this->webhooks as $hook) {
+            $hook->setClient($client);
+            $hook->setContext($this->context);
+        }
+
         $client->on("request", function($headers) use ($logger){
                 $logger->notice("Request object created!");
         });
@@ -79,18 +92,14 @@ class Bot {
 
             if (count($this->catchAllCommands)) {
               foreach ($this->catchAllCommands as $command) {
-                $command->setClient($client);
-                $command->setContext($this->context);
-                $command->executeCommand($data, $this->context);
+                $command->executeCommand($data);
               }
             }
             $command = $this->getCommand($data);
             if ($command instanceof Command\BaseCommand) {
-                $command->setClient($client);
                 $command->setChannel($data['channel']);
                 $command->setUser($data['user']);
-                $command->setContext($this->context);
-                $command->executeCommand($data, $this->context);
+                $command->executeCommand($data);
             }
         });
 
@@ -153,9 +162,7 @@ class Bot {
                     }
                     else {
                         $hook = $this->webhooks[$data['webhook']];
-                        $hook->setClient($client);
-                        $hook->setContext($this->context);
-                        $reply = ['data' => $hook->executeWebhook($data, $this->context)];
+                        $reply = ['data' => $hook->executeWebhook($data)];
                         $http_code = 200;
                     }
                     $response->writeHead($http_code, $resp_headers);

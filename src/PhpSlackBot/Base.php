@@ -5,9 +5,9 @@ abstract class Base {
     private $name;
     private $client;
     private $user;
-    private $context;
+    protected $context;
     abstract protected function configure();
-    abstract protected function execute($message, $context);
+    abstract protected function execute($message);
 
     public function getName() {
         $this->configure();
