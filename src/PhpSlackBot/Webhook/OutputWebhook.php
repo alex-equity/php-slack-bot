@@ -7,7 +7,7 @@ class OutputWebhook extends BaseWebhook {
         $this->setName('output');
     }
 
-    protected function execute($payload, $context) {
+    protected function execute($payload) {
         $payload['channel'] = $this->getChannelIdFromChannelName($payload['channel']);
         $this->getClient()->send(json_encode($payload));
     }

@@ -7,7 +7,7 @@ class DateCommand extends BaseCommand {
         $this->setName('date');
     }
 
-    protected function execute($message, $context) {
+    protected function execute($message) {
         $this->send($this->getCurrentChannel(), null, date("D M j G:i:s T Y"));
     }
 

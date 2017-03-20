@@ -9,7 +9,7 @@ class CountCommand extends BaseCommand {
         $this->setName('count');
     }
 
-    protected function execute($message, $context) {
+    protected function execute($message) {
         $this->send($this->getCurrentChannel(), null, $this->count);
         $this->count++;
     }

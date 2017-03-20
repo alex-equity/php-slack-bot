@@ -12,7 +12,7 @@ class PokerPlanningCommand extends BaseCommand {
         $this->setName('pokerp');
     }
 
-    protected function execute($message, $context) {
+    protected function execute($message) {
         $args = $this->getArgs($message);
         $command = isset($args[1]) ? $args[1] : '';
 

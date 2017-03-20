@@ -7,7 +7,7 @@ class PingPongCommand extends BaseCommand {
         $this->setName('ping');
     }
 
-    protected function execute($message, $context) {
+    protected function execute($message) {
         $this->send($this->getCurrentChannel(), $this->getCurrentUser(), 'Pong');
     }
 
